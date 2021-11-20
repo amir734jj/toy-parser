@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <PackageReference Include="FParsec.CSharp" Version="12.1.0" />
-      <PackageReference Include="Nemesis.Essentials" Version="1.1.3" />
     </ItemGroup>
 
 </Project>

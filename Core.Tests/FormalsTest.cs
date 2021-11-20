@@ -8,13 +8,6 @@ namespace Core.Tests
 {
     public class FormalsTest
     {
-        private readonly Parser _parser;
-
-        public FormalsTest()
-        {
-            _parser = new Parser();
-        }
-        
         [Fact]
         public void Test__Formals_Empty()
         {
@@ -22,7 +15,7 @@ namespace Core.Tests
             const string text = "()";
 
             // Act
-            var reply = _parser.Formals().ParseString(text);
+            var reply = Parser.Formals().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -36,7 +29,7 @@ namespace Core.Tests
             const string text = "(foo: Bar)";
 
             // Act
-            var reply = _parser.Formals().ParseString(text);
+            var reply = Parser.Formals().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -52,7 +45,7 @@ namespace Core.Tests
             const string text = "(foo: Bar, baz: Qux)";
 
             // Act
-            var reply = _parser.Formals().ParseString(text);
+            var reply = Parser.Formals().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());

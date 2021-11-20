@@ -5,13 +5,6 @@ namespace Core.Tests
 {
     public class FormalTest
     {
-        private readonly Parser _parser;
-
-        public FormalTest()
-        {
-            _parser = new Parser();
-        }
-        
         [Fact]
         public void Test__Formal()
         {
@@ -19,7 +12,7 @@ namespace Core.Tests
             const string text = "foo: Bar";
 
             // Act
-            var reply = _parser.Formal().ParseString(text);
+            var reply = Parser.Formal().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());

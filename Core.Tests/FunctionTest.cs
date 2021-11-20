@@ -7,13 +7,6 @@ namespace Core.Tests
 {
     public class FunctionTest
     {
-        private readonly Parser _parser;
-
-        public FunctionTest()
-        {
-            _parser = new Parser();
-        }
-        
         [Fact]
         public void Test__Function()
         {
@@ -21,7 +14,7 @@ namespace Core.Tests
             const string text = "";
 
             // Act
-            var reply = _parser.Formals().ParseString(text);
+            var reply = Parser.Formals().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());

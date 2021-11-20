@@ -8,126 +8,178 @@ namespace Core.Tests
 {
     public class ExpressionTest
     {
-        private readonly Parser _parser;
-
-        public ExpressionTest()
+        [Theory]
+        [InlineData("foo()")]
+        [InlineData(" foo()")]
+        [InlineData("foo() ")]
+        [InlineData(" foo() ")]
+        [InlineData("foo( )")]
+        [InlineData(" foo( )")]
+        [InlineData("foo( ) ")]
+        [InlineData(" foo( ) ")]
+        public void Test__Invocation_Empty(string text)
         {
-            _parser = new Parser();
-        }
-
-        [Fact]
-        public void Test__Invocation_Empty()
-        {
-            // Arrange
-            const string text = "foo()";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(new FunctionCallToken(new VariableToken("foo"), new Tokens(ImmutableList<Token>.Empty.AsValueSemantics())), reply.Result);
         }
         
-        [Fact]
-        public void Test__Invocation_One()
+        [Theory]
+        [InlineData("foo(bar)")]
+        [InlineData(" foo(bar)")]
+        [InlineData("foo(bar) ")]
+        [InlineData(" foo(bar) ")]
+        [InlineData("foo( bar )")]
+        [InlineData(" foo( bar )")]
+        [InlineData("foo( bar ) ")]
+        [InlineData(" foo( bar ) ")]
+        public void Test__Invocation_One(string text)
         {
-            // Arrange
-            const string text = "foo(null)";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
                 new FunctionCallToken(new VariableToken("foo"),
-                    new Tokens(new List<Token> { new AtomicToken(null) }.AsValueSemantics())),
+                    new Tokens(new List<Token> { new VariableToken("bar") }.AsValueSemantics())),
                 reply.Result);
         }
 
-        [Fact]
-        public void Test__Invocation_Many()
+        [Theory]
+        [InlineData("foo(bar,baz)")]
+        [InlineData(" foo(bar,baz)")]
+        [InlineData("foo(bar,baz) ")]
+        [InlineData(" foo(bar,baz) ")]
+        public void Test__Invocation_Many(string text)
         {
-            // Arrange
-            const string text = "foo( null, null)";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
                 new FunctionCallToken(new VariableToken("foo"),
-                    new Tokens(new List<Token> { new AtomicToken(null), new AtomicToken(null) }
+                    new Tokens(new List<Token> { new VariableToken("bar"), new AtomicToken("baz") }
                         .AsValueSemantics())), reply.Result);
         }
 
-        [Fact]
-        public void Test__Declaration()
+        [Theory]
+        [InlineData("var foo: Bar = baz")]
+        [InlineData(" var foo: Bar = baz")]
+        [InlineData("var foo: Bar = baz ")]
+        [InlineData(" var foo: Bar = baz ")]
+        public void Test_Declaration(string text)
         {
-            // Arrange
-            const string text = "var foo: Bar = null";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
-            Assert.Equal(new VarDeclToken("foo", "Bar", new AtomicToken(null)), reply.Result);
+            Assert.Equal(new VarDeclToken("foo", "Bar", new VariableToken("baz")), reply.Result);
         }
 
-        [Fact]
-        public void Test__Assignment()
+        [Theory]
+        [InlineData("foo = null")]
+        [InlineData(" foo = null")]
+        [InlineData("foo = null ")]
+        [InlineData(" foo = null ")]
+        public void Test_Assignment(string text)
         {
-            // Arrange
-            const string text = "foo = null";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(new AssignToken("foo", new AtomicToken(null)), reply.Result);
         }
 
-        [Fact]
-        public void Test__Variable()
+        [Theory]
+        [InlineData("foo")]
+        [InlineData(" foo")]
+        [InlineData("foo ")]
+        [InlineData(" foo ")]
+        public void Test__Variable(string text)
         {
-            // Arrange
-            const string text = "foo";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(new VariableToken("foo"), reply.Result);
         }
 
-        [Fact]
-        public void Test__Block()
+        [Theory]
+        [InlineData("{}")]
+        [InlineData(" {}")]
+        [InlineData("{} ")]
+        [InlineData(" {} ")]
+        [InlineData("{ }")]
+        [InlineData(" { }")]
+        [InlineData("{ } ")]
+        [InlineData(" { } ")]
+        public void Test_Block_Empty(string text)
         {
-            // Arrange
-            const string text = "{ foo }";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            var blockToken = Assert.IsType<BlockToken>(reply.Result);
+            Assert.Empty(blockToken.Tokens.Inner);
+        }
+        
+        [Theory]
+        [InlineData("{foo}")]
+        [InlineData(" {foo}")]
+        [InlineData("{foo} ")]
+        [InlineData(" {foo} ")]
+        [InlineData("{ foo }")]
+        [InlineData(" { foo }")]
+        [InlineData("{ foo } ")]
+        [InlineData(" { foo } ")]
+        public void Test_Block_One(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             var blockToken = Assert.IsType<BlockToken>(reply.Result);
             Assert.Collection(blockToken.Tokens.Inner, token => { Assert.Equal(new VariableToken("foo"), token); });
         }
-
-        [Fact]
-        public void Test__Operation()
+        
+        [Theory]
+        [InlineData("{foo bar}")]
+        [InlineData(" {foo bar}")]
+        [InlineData("{foo bar} ")]
+        [InlineData(" {foo bar} ")]
+        [InlineData("{ foo bar }")]
+        [InlineData(" { foo bar }")]
+        [InlineData("{ foo bar } ")]
+        [InlineData(" { foo bar } ")]
+        public void Test_Block_Many(string text)
         {
-            // Arrange
-            const string text = "1+2*3-1/-3";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            var blockToken = Assert.IsType<BlockToken>(reply.Result);
+            Assert.Equal(
+                new Tokens(new List<Token> { new VariableToken("foo"), new VariableToken("foo") }.AsValueSemantics()),
+                blockToken.Tokens);
+        }
+
+        [Theory]
+        [InlineData("1+2*3-1/-3")]
+        public void Test__Operation(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -137,31 +189,12 @@ namespace Core.Tests
                     new DivideToken(new AtomicToken(1), new NegateToken(new AtomicToken(3)))), reply.Result);
         }
         
-        [Fact]
-        public void Test__Operation_With_Parentheses()
+        [Theory]
+        [InlineData("((1 + 2) * ((3 - 1) / -3))")]
+        public void Test__Operation_With_Parentheses(string text)
         {
-            // Arrange
-            const string text = "((1 + 2) * ((3 - 1) / -3))";
-
             // Act
-            var reply = _parser.Expression().ParseString(text);
-
-            // Assert
-            Assert.True(reply.IsOk());
-            Assert.Equal(
-                new MultiplyToken(
-                    new AddToken(new AtomicToken(1), new AtomicToken(2)),
-                    new DivideToken(new SubtractToken(new AtomicToken(3), new AtomicToken(1)), new NegateToken(new AtomicToken(3)))), reply.Result);
-        }
-        
-        [Fact]
-        public void Test__Amir()
-        {
-            // Arrange
-            const string text = "amir () amir";
-
-            // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());

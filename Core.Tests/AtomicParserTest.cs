@@ -5,13 +5,6 @@ namespace Core.Tests
 {
     public class AtomicParserTest
     {
-        private readonly Parser _parser;
-
-        public AtomicParserTest()
-        {
-            _parser = new Parser();
-        }
-
         [Theory]
         [InlineData("null")]
         [InlineData(" null")]
@@ -20,7 +13,7 @@ namespace Core.Tests
         public void Test_Null(string text)
         {
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -35,7 +28,7 @@ namespace Core.Tests
         public void Test_Boolean_True(string text)
         {
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -50,7 +43,7 @@ namespace Core.Tests
         public void Test_Boolean_False(string text)
         {
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -62,10 +55,10 @@ namespace Core.Tests
         [InlineData(" 123456789")]
         [InlineData("123456789 ")]
         [InlineData(" 123456789 ")]
-        public void Test__Number(string text)
+        public void Test_Number(string text)
         {
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
@@ -77,10 +70,10 @@ namespace Core.Tests
         [InlineData(@" ""Hello world!""")]
         [InlineData(@"""Hello world!"" ")]
         [InlineData(@" ""Hello world!"" ")]
-        public void Test__Atomic_String(string text)
+        public void Test_String(string text)
         {
             // Act
-            var reply = _parser.Expression().ParseString(text);
+            var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
