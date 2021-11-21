@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using Core.Extensions;
 using FParsec.CSharp;
 using Xunit;
@@ -8,12 +7,17 @@ namespace Core.Tests
 {
     public class FormalsTest
     {
-        [Fact]
-        public void Test__Formals_Empty()
+        [Theory]
+        [InlineData("()")]
+        [InlineData(" ()")]
+        [InlineData("() ")]
+        [InlineData(" () ")]
+        [InlineData("( )")]
+        [InlineData(" ( )")]
+        [InlineData("( ) ")]
+        [InlineData(" ( ) ")]
+        public void Test_Empty(string text)
         {
-            // Arrange
-            const string text = "()";
-
             // Act
             var reply = Parser.Formals().ParseString(text);
 
@@ -22,12 +26,17 @@ namespace Core.Tests
             Assert.Equal(new Formals(new List<Formal>().AsValueSemantics()), reply.Result);
         }
         
-        [Fact]
-        public void Test__Formals_One()
+        [Theory]
+        [InlineData("(foo:Bar)")]
+        [InlineData(" (foo:Bar)")]
+        [InlineData("(foo:Bar) ")]
+        [InlineData(" (foo:Bar) ")]
+        [InlineData("(foo : Bar)")]
+        [InlineData(" (foo : Bar)")]
+        [InlineData("(foo : Bar) ")]
+        [InlineData(" (foo : Bar) ")]
+        public void Test_One(string text)
         {
-            // Arrange
-            const string text = "(foo: Bar)";
-
             // Act
             var reply = Parser.Formals().ParseString(text);
 
@@ -38,12 +47,17 @@ namespace Core.Tests
                 reply.Result);
         }
         
-        [Fact]
-        public void Test__Formals_Many()
+        [Theory]
+        [InlineData("(foo:Bar,baz:Qux)")]
+        [InlineData(" (foo:Bar,baz:Qux)")]
+        [InlineData("(foo:Bar,baz:Qux) ")]
+        [InlineData(" (foo:Bar,baz:Qux) ")]
+        [InlineData("(foo : Bar , baz : Qux)")]
+        [InlineData(" (foo : Bar,baz : Qux)")]
+        [InlineData("(foo : Bar,baz : Qux) ")]
+        [InlineData(" (foo : Bar,baz : Qux) ")]
+        public void Test_Many(string text)
         {
-            // Arrange
-            const string text = "(foo: Bar, baz: Qux)";
-
             // Act
             var reply = Parser.Formals().ParseString(text);
 

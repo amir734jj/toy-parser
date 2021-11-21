@@ -17,16 +17,18 @@ namespace Core.Tests
         [InlineData(" foo( )")]
         [InlineData("foo( ) ")]
         [InlineData(" foo( ) ")]
-        public void Test__Invocation_Empty(string text)
+        public void Test_Invocation_Empty(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
-            Assert.Equal(new FunctionCallToken(new VariableToken("foo"), new Tokens(ImmutableList<Token>.Empty.AsValueSemantics())), reply.Result);
+            Assert.Equal(
+                new FunctionCallToken("foo",
+                    new Tokens(ImmutableList<Token>.Empty.AsValueSemantics())), reply.Result);
         }
-        
+
         [Theory]
         [InlineData("foo(bar)")]
         [InlineData(" foo(bar)")]
@@ -36,7 +38,7 @@ namespace Core.Tests
         [InlineData(" foo( bar )")]
         [InlineData("foo( bar ) ")]
         [InlineData(" foo( bar ) ")]
-        public void Test__Invocation_One(string text)
+        public void Test_Invocation_One(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
@@ -44,7 +46,7 @@ namespace Core.Tests
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new FunctionCallToken(new VariableToken("foo"),
+                new FunctionCallToken("foo",
                     new Tokens(new List<Token> { new VariableToken("bar") }.AsValueSemantics())),
                 reply.Result);
         }
@@ -54,7 +56,7 @@ namespace Core.Tests
         [InlineData(" foo(bar,baz)")]
         [InlineData("foo(bar,baz) ")]
         [InlineData(" foo(bar,baz) ")]
-        public void Test__Invocation_Many(string text)
+        public void Test_Invocation_Many(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
@@ -62,8 +64,8 @@ namespace Core.Tests
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new FunctionCallToken(new VariableToken("foo"),
-                    new Tokens(new List<Token> { new VariableToken("bar"), new AtomicToken("baz") }
+                new FunctionCallToken("foo",
+                    new Tokens(new List<Token> { new VariableToken("bar"), new VariableToken("baz") }
                         .AsValueSemantics())), reply.Result);
         }
 
@@ -102,7 +104,7 @@ namespace Core.Tests
         [InlineData(" foo")]
         [InlineData("foo ")]
         [InlineData(" foo ")]
-        public void Test__Variable(string text)
+        public void Test_Variable(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
@@ -131,7 +133,7 @@ namespace Core.Tests
             var blockToken = Assert.IsType<BlockToken>(reply.Result);
             Assert.Empty(blockToken.Tokens.Inner);
         }
-        
+
         [Theory]
         [InlineData("{foo}")]
         [InlineData(" {foo}")]
@@ -151,16 +153,16 @@ namespace Core.Tests
             var blockToken = Assert.IsType<BlockToken>(reply.Result);
             Assert.Collection(blockToken.Tokens.Inner, token => { Assert.Equal(new VariableToken("foo"), token); });
         }
-        
+
         [Theory]
-        [InlineData("{foo bar}")]
-        [InlineData(" {foo bar}")]
-        [InlineData("{foo bar} ")]
-        [InlineData(" {foo bar} ")]
-        [InlineData("{ foo bar }")]
-        [InlineData(" { foo bar }")]
-        [InlineData("{ foo bar } ")]
-        [InlineData(" { foo bar } ")]
+        [InlineData("{foo ; bar}")]
+        [InlineData(" {foo ; bar}")]
+        [InlineData("{foo ; bar} ")]
+        [InlineData(" {foo ; bar} ")]
+        [InlineData("{ foo ; bar }")]
+        [InlineData(" { foo ; bar }")]
+        [InlineData("{ foo ; bar } ")]
+        [InlineData(" { foo ; bar } ")]
         public void Test_Block_Many(string text)
         {
             // Act
@@ -170,13 +172,18 @@ namespace Core.Tests
             Assert.True(reply.IsOk());
             var blockToken = Assert.IsType<BlockToken>(reply.Result);
             Assert.Equal(
-                new Tokens(new List<Token> { new VariableToken("foo"), new VariableToken("foo") }.AsValueSemantics()),
+                new Tokens(new List<Token> { new VariableToken("foo"), new VariableToken("bar") }.AsValueSemantics()),
                 blockToken.Tokens);
         }
 
         [Theory]
         [InlineData("1+2*3-1/-3")]
-        public void Test__Operation(string text)
+        [InlineData(" 1+2*3-1/-3")]
+        [InlineData("1+2*3-1/-3 ")]
+        [InlineData(" 1+2*3-1/-3 ")]
+        [InlineData(" 1 + 2 * 3 - 1 / - 3 ")]
+        [InlineData(" ((1 + (2 * 3)) - (1 / (- 3))) ")]
+        public void Test_Operation(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
@@ -185,23 +192,29 @@ namespace Core.Tests
             Assert.True(reply.IsOk());
             Assert.Equal(
                 new SubtractToken(
-                    new AddToken(new AtomicToken(1), new MultiplyToken(new AtomicToken(2), new AtomicToken(3))),
+                    new AddToken(
+                        new AtomicToken(1),
+                        new MultiplyToken(new AtomicToken(2), new AtomicToken(3))),
                     new DivideToken(new AtomicToken(1), new NegateToken(new AtomicToken(3)))), reply.Result);
         }
         
         [Theory]
-        [InlineData("((1 + 2) * ((3 - 1) / -3))")]
-        public void Test__Operation_With_Parentheses(string text)
+        [InlineData("if(foo)bar else(baz)")]
+        [InlineData(" if(foo)bar else(baz)")]
+        [InlineData("if(foo)bar else(baz) ")]
+        [InlineData(" if(foo)bar else(baz) ")]
+        public void Test_Conditional(string text)
         {
             // Act
             var reply = Parser.Expression().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
-            Assert.Equal(
-                new MultiplyToken(
-                    new AddToken(new AtomicToken(1), new AtomicToken(2)),
-                    new DivideToken(new SubtractToken(new AtomicToken(3), new AtomicToken(1)), new NegateToken(new AtomicToken(3)))), reply.Result);
+            Assert.Equal(new CondToken(
+                    new VariableToken("foo"),
+                    new VariableToken("bar"),
+                    new VariableToken("baz")),
+                reply.Result);
         }
     }
 }

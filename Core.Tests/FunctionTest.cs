@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using Core.Extensions;
 using FParsec.CSharp;
 using Xunit;
@@ -7,20 +7,25 @@ namespace Core.Tests
 {
     public class FunctionTest
     {
-        [Fact]
-        public void Test__Function()
+        [Theory]
+        [InlineData("def foo()=bar")]
+        [InlineData(" def foo()=bar")]
+        [InlineData("def foo()=bar ")]
+        [InlineData(" def foo()=bar ")]
+        [InlineData("def foo() = bar")]
+        [InlineData(" def foo() = bar")]
+        [InlineData("def foo() = bar ")]
+        [InlineData(" def foo() = bar ")]
+        public void Test_Function( string text)
         {
-            // Arrange
-            const string text = "";
-
             // Act
-            var reply = Parser.Formals().ParseString(text);
+            var reply = Parser.Function().ParseString(text);
 
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new Formals(new[] { new Formal("foo", "Bar"), new Formal("baz", "Qux") }
-                    .AsValueSemantics()), reply.Result);
+                new FunctionDeclToken("foo", new Formals(new List<Formal>().AsValueSemantics()),
+                    new VariableToken("bar")), reply.Result);
         }
     }
 }

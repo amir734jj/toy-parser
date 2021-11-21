@@ -5,12 +5,17 @@ namespace Core.Tests
 {
     public class FormalTest
     {
-        [Fact]
-        public void Test__Formal()
+        [Theory]
+        [InlineData("foo:Bar")]
+        [InlineData(" foo:Bar")]
+        [InlineData("foo:Bar ")]
+        [InlineData(" foo:Bar ")]
+        [InlineData("foo : Bar")]
+        [InlineData(" foo : Bar")]
+        [InlineData("foo : Bar ")]
+        [InlineData(" foo : Bar ")]
+        public void Test__Formal(string text)
         {
-            // Arrange
-            const string text = "foo: Bar";
-
             // Act
             var reply = Parser.Formal().ParseString(text);
 
