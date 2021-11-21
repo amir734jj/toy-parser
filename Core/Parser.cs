@@ -38,7 +38,7 @@ namespace Core
             FSharpFunc<CharStream<Unit>, Reply<Token>> Atomic(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
-                var stringP = Wrap('"', ManyChars(NoneOf(new[] { '"' })), '"').Label("string")
+                var quotedStringP = Wrap('"', Regex(@"(?:[^\\""]|\\.)*"), '"').Label("string")
                     .Map(x => (Token)new AtomicToken(x));
                 var numberP = Int.Lbl("number")
                     .Map(x => (Token)new AtomicToken(x));
@@ -46,7 +46,7 @@ namespace Core
                     .Map(x => (Token)new AtomicToken(x == "true"));
                 var nullP = StringP("null").Map(_ => (Token)new AtomicToken(null));
 
-                var atomicP = Choice(nullP, numberP, stringP, boolP).Label("atomic");
+                var atomicP = Choice(nullP, numberP, quotedStringP, boolP).Label("atomic");
 
                 return SkipWs(atomicP);
             }
@@ -89,6 +89,21 @@ namespace Core
 
                 return SkipWs(conditionalP);
             }
+            
+            static FSharpFunc<CharStream<Unit>, Reply<Token>> While(
+                FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
+            {
+                // While
+                var conditionalP = Skip("while").And_(WS)
+                    .AndRTry(Wrap('(', expressionRec, ')'))
+                    .AndLTry(WS)
+                    .AndTry(expressionRec)
+                    .Label("while")
+                    .Map(x =>
+                        (Token)new WhileToken(x.Item1, x.Item2));
+
+                return SkipWs(conditionalP);
+            }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Block(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
@@ -113,9 +128,9 @@ namespace Core
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // Function call
-                var functionCallP = Variable(expressionRec)
+                var functionCallP = expressionRec
                     .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
-                    .Map(x => (Token)new FunctionCallToken(((VariableToken)(x.Item1)).Variable, new Tokens(x.Item2)));
+                    .Map(x => (Token)new FunctionCallToken(x.Item1, new Tokens(x.Item2)));
 
                 return SkipWs(functionCallP);
             }
@@ -131,12 +146,13 @@ namespace Core
                     .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y)))
                 .WithTerms(term => Choice(
                         Declaration(term),
+                        Conditional(term),
+                        While(term),
                         Assignment(term),
                         Block(term),
-                        Conditional(term),
                         Atomic(term),
-                        FunctionCall(term),
                         Variable(term),
+                        FunctionCall(term),
                         Wrap('(', term, ')')
                     )
                 )
@@ -225,7 +241,7 @@ namespace Core
 
             return SkipWs(classP);
         }
-        
+
         private static FSharpFunc<CharStream<Unit>, Reply<T>> Wrap<T>(
             char start,
             FSharpFunc<CharStream<Unit>, Reply<T>> p,

@@ -25,7 +25,7 @@ namespace Core.Tests
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new FunctionCallToken("foo",
+                new FunctionCallToken(new VariableToken("foo"),
                     new Tokens(ImmutableList<Token>.Empty.AsValueSemantics())), reply.Result);
         }
 
@@ -46,7 +46,7 @@ namespace Core.Tests
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new FunctionCallToken("foo",
+                new FunctionCallToken(new VariableToken("foo"),
                     new Tokens(new List<Token> { new VariableToken("bar") }.AsValueSemantics())),
                 reply.Result);
         }
@@ -64,7 +64,7 @@ namespace Core.Tests
             // Assert
             Assert.True(reply.IsOk());
             Assert.Equal(
-                new FunctionCallToken("foo",
+                new FunctionCallToken(new VariableToken("foo"),
                     new Tokens(new List<Token> { new VariableToken("bar"), new VariableToken("baz") }
                         .AsValueSemantics())), reply.Result);
         }

@@ -24,6 +24,8 @@ namespace Core
 
     public record AssignToken(string Variable, Token Body) : Token;
 
+    public record WhileToken(Token Condition, Token Body) : Token;
+    
     public record CondToken(Token Condition, Token IfToken, Token ElseToken) : Token;
 
     public record VarDeclToken(string Variable, string Type, Token Body) : Token;
@@ -32,7 +34,7 @@ namespace Core
     
     public record BlockToken(Tokens Tokens) : Token;
 
-    public record FunctionCallToken(string Name, Token Actuals) : Token;
+    public record FunctionCallToken(Token Name, Token Actuals) : Token;
 
     public record NegateToken(Token Token) : Token;
 

@@ -66,10 +66,10 @@ namespace Core.Tests
         }
 
         [Theory]
-        [InlineData(@"""Hello world!""")]
-        [InlineData(@" ""Hello world!""")]
-        [InlineData(@"""Hello world!"" ")]
-        [InlineData(@" ""Hello world!"" ")]
+        [InlineData(@""" Hello world! \r\n\"" """)]
+        [InlineData(@" "" Hello world! \r\n\"" """)]
+        [InlineData(@""" Hello world! \r\n\"" "" ")]
+        [InlineData(@" "" Hello world! \r\n\"" "" ")]
         public void Test_String(string text)
         {
             // Act
@@ -77,7 +77,7 @@ namespace Core.Tests
 
             // Assert
             Assert.True(reply.IsOk());
-            Assert.Equal(new AtomicToken("Hello world!"), reply.Result);
+            Assert.Equal(new AtomicToken("Hello world! \\r\\n\\\" "), reply.Result);
         }
     }
 }
