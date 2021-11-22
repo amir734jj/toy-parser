@@ -123,12 +123,25 @@ namespace Core
 
                 return SkipWs(variableP);
             }
+            
+            static FSharpFunc<CharStream<Unit>, Reply<Token>> Instantiation(
+                FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
+            {
+                // Instantiation
+                var instantiationP = Skip("new")
+                    .And_(WS)
+                    .AndR(Name())
+                    .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
+                    .Map(x => (Token)new InstantiationToken(x.Item1, new Tokens(x.Item2)));
+
+                return SkipWs(instantiationP);
+            }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> FunctionCall(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // Function call
-                var functionCallP = expressionRec
+                var functionCallP = Variable(expressionRec)
                     .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
                     .Map(x => (Token)new FunctionCallToken(x.Item1, new Tokens(x.Item2)));
 
@@ -146,13 +159,14 @@ namespace Core
                     .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y)))
                 .WithTerms(term => Choice(
                         Declaration(term),
+                        Instantiation(term),
                         Conditional(term),
                         While(term),
                         Assignment(term),
                         Block(term),
                         Atomic(term),
-                        Variable(term),
                         FunctionCall(term),
+                        Variable(term),
                         Wrap('(', term, ')')
                     )
                 )
@@ -169,7 +183,7 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<FunctionDeclToken>> Function()
         {
-            var functionDeclP = Skip("def").AndTry_(WS1).AndRTry(Name()).AndLTry(WS).AndTry(Formals())
+            var functionDeclP = Skip("def").AndTry_(WS1).AndRTry(Name()).AndLTry(WS).AndTry(Formals(false))
                 .AndLTry(CharP('='))
                 .AndTry(Expression())
                 .Map(x => new FunctionDeclToken(
@@ -200,9 +214,10 @@ namespace Core
         /// Formal are argument to functions to argument to class constructors
         /// </summary>
         /// <returns></returns>
-        public static FSharpFunc<CharStream<Unit>, Reply<Formal>> Formal()
+        public static FSharpFunc<CharStream<Unit>, Reply<Formal>> Formal(bool withVarPrefix)
         {
-            var argumentP = Name().AndLTry(WS).AndLTry(CharP(':')).AndLTry(WS).AndTry(Name())
+            var prefix = withVarPrefix ? Skip("var").And_(WS1).AndR(Name()) : Name();
+            var argumentP = prefix.AndLTry(WS).AndLTry(CharP(':')).AndLTry(WS).AndTry(Name())
                 .Map(x => new Formal(x.Item1, x.Item2));
 
             return SkipWs(argumentP);
@@ -211,9 +226,9 @@ namespace Core
         /// <summary>
         /// Formals are list of formals separated by ','
         /// </summary>
-        public static FSharpFunc<CharStream<Unit>, Reply<Formals>> Formals()
+        public static FSharpFunc<CharStream<Unit>, Reply<Formals>> Formals(bool withVarPrefix)
         {
-            var formalsP = SepBy('(', Formal(), ')', Skip(','))
+            var formalsP = SepBy('(', Formal(withVarPrefix), ')', Skip(','))
                 .Map(x => new Formals(x));
 
             return SkipWs(formalsP);
@@ -225,17 +240,18 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<ClassToken>> Class()
         {
-            var classSignatureP = Name().AndLTry(WS).AndTry(Formals());
+            var classSignatureP = Name().AndLTry(WS).AndTry(Formals(true));
 
             var classP = StringP("class").AndTry_(WS).AndRTry(classSignatureP).AndLTry(WS)
                 .AndLTry(StringP("extends"))
-                .AndTry(classSignatureP)
+                .And(Name())
+                .AndTry(SepBy('(', Expression(), ')', Skip(',')))
                 .AndTry(SepBy('{', Feature(), '}', Skip(';')))
                 .Map(x => new ClassToken(
-                    x.Item1.Item1.Item1,
+                    x.Item1.Item1.Item1.Item1,
+                    x.Item1.Item1.Item1.Item2,
                     x.Item1.Item1.Item2,
-                    x.Item1.Item2.Item1,
-                    x.Item1.Item2.Item2,
+                    new Tokens(x.Item1.Item2),
                     new Tokens(x.Item2)
                 ));
 

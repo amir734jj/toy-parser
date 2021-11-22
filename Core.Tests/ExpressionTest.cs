@@ -216,5 +216,90 @@ namespace Core.Tests
                     new VariableToken("baz")),
                 reply.Result);
         }
+        
+        [Theory]
+        [InlineData("while(foo) bar")]
+        [InlineData(" while(foo) bar")]
+        [InlineData("while(foo) bar ")]
+        [InlineData(" while(foo) bar ")]
+        public void Test_Loop(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new WhileToken(
+                    new VariableToken("foo"),
+                    new VariableToken("bar")),
+                reply.Result);
+        }
+        
+        [Theory]
+        [InlineData("new Foo()")]
+        [InlineData(" new Foo()")]
+        [InlineData("new Foo() ")]
+        [InlineData(" new Foo() ")]
+        [InlineData("new Foo ( )")]
+        [InlineData(" new Foo ( )")]
+        [InlineData("new Foo ( ) ")]
+        [InlineData(" new Foo ( ) ")]
+        public void Test_Instantiation_Empty(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new InstantiationToken(
+                    "Foo",
+                    new Tokens(new List<Token>().AsValueSemantics())),
+                reply.Result);
+        }
+        
+        [Theory]
+        [InlineData("new Foo(bar)")]
+        [InlineData(" new Foo(bar)")]
+        [InlineData("new Foo(bar) ")]
+        [InlineData(" new Foo(bar) ")]
+        [InlineData("new Foo ( bar )")]
+        [InlineData(" new Foo ( bar )")]
+        [InlineData("new Foo ( bar ) ")]
+        [InlineData(" new Foo ( bar ) ")]
+        public void Test_Instantiation_One(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new InstantiationToken(
+                    "Foo",
+                    new Tokens(new List<Token>{ new VariableToken("bar")}.AsValueSemantics())),
+                reply.Result);
+        }
+        
+        [Theory]
+        [InlineData("new Foo(bar,baz)")]
+        [InlineData(" new Foo(bar,baz)")]
+        [InlineData("new Foo(bar,baz) ")]
+        [InlineData(" new Foo(bar,baz) ")]
+        [InlineData("new Foo ( bar , baz )")]
+        [InlineData(" new Foo( bar , baz )")]
+        [InlineData("new Foo ( bar , baz ) ")]
+        [InlineData(" new Foo ( bar , baz ) ")]
+        public void Test_Instantiation_Many(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new InstantiationToken(
+                    "Foo",
+                    new Tokens(
+                        new List<Token> { new VariableToken("bar"), new VariableToken("baz") }.AsValueSemantics())),
+                reply.Result);
+        }
     }
 }

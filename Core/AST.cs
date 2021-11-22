@@ -51,10 +51,12 @@ namespace Core
     public record AtomicToken(IConvertible Value) : Token;
 
     public record VariableToken(string Variable) : Token;
+    
+    public record InstantiationToken(string Class, Tokens Actuals) : Token;
 
     public record Formal(string Name, string Type) : Token;
 
-    public record ClassToken(string Name, Formals Formals, string Inherits, Formals ParentFormals, Tokens Features);
+    public record ClassToken(string Name, Formals Formals, string Inherits, Tokens Actuals, Tokens Features);
 
     #endregion
     
