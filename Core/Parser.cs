@@ -199,8 +199,8 @@ namespace Core
 
         public static FSharpFunc<CharStream<Unit>, Reply<Token>> Feature()
         {
-            var featureP = Choice(Function(), Expression())
-                .Map(x => (Token)x);
+            var featureP = Choice(Function().Map(x => (Token)x), Expression())
+                .Map(x => x);
 
             return SkipWs(featureP);
         }
