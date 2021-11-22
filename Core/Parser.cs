@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Core.Extensions;
 using Core.Interfaces;
 using FParsec;
@@ -19,7 +20,7 @@ namespace Core
                 .Label("name");
 
             return nameP;
-        } /**/
+        }
 
         /// <summary>
         /// Expression are:
@@ -236,8 +237,11 @@ namespace Core
         public static FSharpFunc<CharStream<Unit>, Reply<ClassToken>> Class()
         {
             var classSignatureP = Name().AndLTry(WS).AndTry(Formals(true));
+            var classPrefix = StringP("class").AndTry_(WS).AndRTry(classSignatureP);
 
-            var classP = StringP("class").AndTry_(WS).AndRTry(classSignatureP).AndLTry(WS)
+            // class A() extends B() { }
+            var classP1 = classPrefix
+                .AndLTry(WS)
                 .AndLTry(StringP("extends"))
                 .And(WS1)
                 .And(Name())
@@ -250,8 +254,41 @@ namespace Core
                     new Tokens(x.Item1.Item2),
                     new Tokens(x.Item2)
                 ));
+            
+            // class A() { }
+            var classP2 = classPrefix
+                .AndTry(SepBy('{', Feature(), '}', Skip(';')))
+                .Map(x => new ClassToken(
+                    x.Item1.Item1,
+                    x.Item1.Item2,
+                    "object",
+                    new Tokens(new List<Token>().AsValueSemantics()),
+                    new Tokens(x.Item2)
+                ));
+            
+            // class A() extends native { }
+            var classP3 = classPrefix
+                .AndLTry(StringP("extends"))
+                .AndTry(WS1)
+                .AndTry(Skip("native"))
+                .AndTry(SepBy('{', Feature(), '}', Skip(';')))
+                .Map(x => new ClassToken(
+                    x.Item1.Item1,
+                    x.Item1.Item2,
+                    "native",
+                    new Tokens(new List<Token>().AsValueSemantics()),
+                    new Tokens(x.Item2)
+                ));
 
-            return SkipWs(classP);
+            return SkipWs(Choice(classP1, classP2, classP3));
+        }
+
+        public static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<ClassToken>>> Classes()
+        {
+            var classesP = Many(Class(), sep: Skip(WS1))
+                .Map(x => x.AsValueSemantics());
+
+            return SkipWs(classesP);
         }
 
         private static FSharpFunc<CharStream<Unit>, Reply<T>> Wrap<T>(
