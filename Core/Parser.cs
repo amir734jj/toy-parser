@@ -15,11 +15,11 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
-            var nameP = Many1Chars(NoneOf(new[] { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*' }))
+            var nameP = Many1Chars(NoneOf(new[] { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!' }))
                 .Label("name");
 
             return nameP;
-        }
+        } /**/
 
         /// <summary>
         /// Expression are:
@@ -89,7 +89,7 @@ namespace Core
 
                 return SkipWs(conditionalP);
             }
-            
+
             static FSharpFunc<CharStream<Unit>, Reply<Token>> While(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
@@ -123,7 +123,7 @@ namespace Core
 
                 return SkipWs(variableP);
             }
-            
+
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Instantiation(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
@@ -156,7 +156,10 @@ namespace Core
                     .AddInfix("+", 10, WS, (x, y) => new AddToken(x, y))
                     .AddInfix("-", 10, WS, (x, y) => new SubtractToken(x, y))
                     .AddInfix("*", 20, WS, (x, y) => new MultiplyToken(x, y))
-                    .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y)))
+                    .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y))
+                    .AddInfix("==", 30, WS, (x, y) => new EqualsToken(x, y))
+                    .AddInfix("!=", 30, WS, (x, y) => new NotEqualsToken(x, y))
+                )
                 .WithTerms(term => Choice(
                         Declaration(term),
                         Instantiation(term),
@@ -196,18 +199,10 @@ namespace Core
 
         public static FSharpFunc<CharStream<Unit>, Reply<Token>> Feature()
         {
-            var featureP = Choice(Function())
+            var featureP = Choice(Function(), Expression())
                 .Map(x => (Token)x);
 
             return SkipWs(featureP);
-        }
-
-        public static FSharpFunc<CharStream<Unit>, Reply<Tokens>> Features()
-        {
-            var featuresP = Many(Feature())
-                .Map(x => new Tokens(x.AsValueSemantics()));
-
-            return SkipWs(featuresP);
         }
 
         /// <summary>
@@ -244,6 +239,7 @@ namespace Core
 
             var classP = StringP("class").AndTry_(WS).AndRTry(classSignatureP).AndLTry(WS)
                 .AndLTry(StringP("extends"))
+                .And(WS1)
                 .And(Name())
                 .AndTry(SepBy('(', Expression(), ')', Skip(',')))
                 .AndTry(SepBy('{', Feature(), '}', Skip(';')))
@@ -279,9 +275,11 @@ namespace Core
             return arrayP;
         }
 
-        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipWs<T>(FSharpFunc<CharStream<Unit>, Reply<T>> p)
+        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipWs<T>(
+            FSharpFunc<CharStream<Unit>, Reply<T>> p
+        )
         {
-            return Skip(WS).AndTry(p).AndL(WS);
+            return Skip(WS).AndTry(p).AndL(Skip(WS));
         }
     }
 }

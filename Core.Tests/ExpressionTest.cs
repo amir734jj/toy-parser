@@ -301,5 +301,43 @@ namespace Core.Tests
                         new List<Token> { new VariableToken("bar"), new VariableToken("baz") }.AsValueSemantics())),
                 reply.Result);
         }
+        
+        [Theory]
+        [InlineData("foo==bar")]
+        [InlineData(" foo==bar")]
+        [InlineData("foo==bar ")]
+        [InlineData(" foo==bar ")]
+        [InlineData("foo == bar")]
+        [InlineData(" foo == bar")]
+        [InlineData("foo == bar ")]
+        [InlineData(" foo == bar ")]
+        public void Test_Equals(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new EqualsToken(new VariableToken("foo"), new VariableToken("bar")), reply.Result);
+        }
+        
+        [Theory]
+        [InlineData("foo!=bar")]
+        [InlineData(" foo!=bar")]
+        [InlineData("foo!=bar ")]
+        [InlineData(" foo!=bar ")]
+        [InlineData("foo != bar")]
+        [InlineData(" foo != bar")]
+        [InlineData("foo != bar ")]
+        [InlineData(" foo != bar ")]
+        public void Test_NotEquals(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.True(reply.IsOk());
+            Assert.Equal(new NotEqualsToken(new VariableToken("foo"), new VariableToken("bar")), reply.Result);
+        }
     }
 }

@@ -41,7 +41,11 @@ namespace Core
     public record NotToken(Token Token) : Token;
     
     public record AddToken(Token Left, Token Right) : Token;
-    
+
+    public record EqualsToken(Token Left, Token Right) : Token;
+
+    public record NotEqualsToken(Token Left, Token Right) : Token;
+
     public record SubtractToken(Token Left, Token Right) : Token;
     
     public record DivideToken(Token Left, Token Right) : Token;
