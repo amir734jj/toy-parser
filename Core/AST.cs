@@ -58,6 +58,8 @@ namespace Core
 
     public record VariableToken(string Variable) : Token;
     
+    public record AccessToken(Token Receiver, string Variable) : Token;
+    
     public record InstantiationToken(string Class, Tokens Actuals) : Token;
 
     public record Formal(string Name, string Type) : Token;

@@ -160,6 +160,7 @@ namespace Core
                     .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y))
                     .AddInfix("==", 30, WS, (x, y) => new EqualsToken(x, y))
                     .AddInfix("!=", 30, WS, (x, y) => new NotEqualsToken(x, y))
+                    //.AddPostfix(".", 40, Name(), x => new AccessToken(x, ))
                 )
                 .WithTerms(term => Choice(
                         Declaration(term),
@@ -285,7 +286,7 @@ namespace Core
 
         public static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<ClassToken>>> Classes()
         {
-            var classesP = Many(Class(), sep: Skip(WS1))
+            var classesP = Many(Class(), sep: Skip(WS), canEndWithSep: true)
                 .Map(x => x.AsValueSemantics());
 
             return SkipWs(classesP);
