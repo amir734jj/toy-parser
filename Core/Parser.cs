@@ -16,7 +16,8 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
-            var nameP = Many1Chars(NoneOf(new[] { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!' }))
+            var nameP = Many1Chars(NoneOf(new[]
+                    { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.' }))
                 .Label("name");
 
             return nameP;
@@ -149,8 +150,11 @@ namespace Core
                 return SkipWs(functionCallP);
             }
 
+            FSharpFunc<CharStream<Unit>, Reply<Token>> expressionP = null;
+            var expressionPRec = Rec(() => expressionP);
+
             // Binary and unary
-            var expressionP = new OPPBuilder<Unit, Token, Unit>()
+            expressionP = new OPPBuilder<Unit, Token, Unit>()
                 .WithOperators(ops => ops
                     .AddPrefix("-", 5, WS, token => new NegateToken(token))
                     .AddPrefix("!", 5, WS, token => new NotToken(token))
@@ -160,7 +164,7 @@ namespace Core
                     .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y))
                     .AddInfix("==", 30, WS, (x, y) => new EqualsToken(x, y))
                     .AddInfix("!=", 30, WS, (x, y) => new NotEqualsToken(x, y))
-                    //.AddPostfix(".", 40, Name(), x => new AccessToken(x, ))
+                    .AddInfix(".", 40, WS, (x, y) => new AccessToken(x, y))
                 )
                 .WithTerms(term => Choice(
                         Declaration(term),
@@ -178,6 +182,7 @@ namespace Core
                 .Build()
                 .ExpressionParser
                 .Label("operator");
+
 
             return SkipWs(expressionP);
         }
@@ -255,7 +260,7 @@ namespace Core
                     new Tokens(x.Item1.Item2),
                     new Tokens(x.Item2)
                 ));
-            
+
             // class A() { }
             var classP2 = classPrefix
                 .AndTry(SepBy('{', Feature(), '}', Skip(';')))
@@ -266,7 +271,7 @@ namespace Core
                     new Tokens(new List<Token>().AsValueSemantics()),
                     new Tokens(x.Item2)
                 ));
-            
+
             // class A() extends native { }
             var classP3 = classPrefix
                 .AndLTry(StringP("extends"))
