@@ -180,15 +180,15 @@ namespace Core
                 var arm = Skip("case").AndTry_(WS1)
                     .AndRTry(Choice(typeMatch, nullMatch));
 
-                var arms = SepBy('{', arm, '}', SkipNewline, true);
+                var arms = SepBy('{', arm, '}', SkipNewline, canEndWithSep: true);
                 
-                var nativeP = expressionRec.AndLTry(WS1).AndLTry(StringP("match"))
+                var matchP = expressionRec.AndLTry(WS1).AndLTry(StringP("match"))
                     .AndLTry(WS)
                     .AndTry(arms)
-                    .Label("native")
+                    .Label("match")
                     .Map(x => (Token)new Match(x.Item1, x.Item2.AsValueSemantics()));
 
-                return SkipWs(nativeP);
+                return SkipWs(matchP);
             }
             
             // Binary and unary
@@ -221,7 +221,7 @@ namespace Core
                         FunctionCall(term),
                         Variable(term),
                         Wrap('(', term, ')')
-                        //Match(expressionRec)
+                        Match(expressionRec)
                     )
                 )
                 .Build()
