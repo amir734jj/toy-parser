@@ -5,10 +5,11 @@ using Xunit;
 
 namespace Core.Tests
 {
-    public class ClassTest
+    public class ClassParserTest
     {
-        [Theory] [InlineData("class Foo() extends Bar() { }")]
-        public void Test_Class_Extends_EmptyFormals_EmptyActuals( string text)
+        [Theory]
+        [InlineData("class Foo() extends Bar() { }")]
+        public void Test_Extends_EmptyFormals_EmptyActuals( string text)
         {
             // Act
             var reply = Parser.Class().ParseString(text);
@@ -23,7 +24,7 @@ namespace Core.Tests
         
         [Theory]
         [InlineData("class Foo() { }")]
-        public void Test_Class_ExtendsNone_EmptyFormals( string text)
+        public void Test_ExtendsNone_EmptyFormals( string text)
         {
             // Act
             var reply = Parser.Class().ParseString(text);
@@ -37,8 +38,8 @@ namespace Core.Tests
         }
         
         [Theory]
-        [InlineData("class Foo(var baz: Int) extends Bar(baz) { }")]
-        public void Test_Class_One( string text)
+        [InlineData("class Foo(baz: Int) extends Bar(baz) { }")]
+        public void Test_One_Formal( string text)
         {
             // Act
             var reply = Parser.Class().ParseString(text);

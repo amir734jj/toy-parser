@@ -72,7 +72,7 @@ namespace Core.Tests
         [InlineData(@" "" Hello world! \r\n\"" "" ")]
         public void Test_String(string text)
         {
-            // Act
+            // ActFunctionTest
             var reply = Parser.Expression().ParseString(text);
 
             // Assert

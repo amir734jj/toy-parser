@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Core.Extensions;
 using Core.Interfaces;
 using FParsec;
@@ -17,7 +19,7 @@ namespace Core
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
             var nameP = Many1Chars(NoneOf(new[]
-                    { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.' }))
+                    { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<' }))
                 .Label("name");
 
             return nameP;
@@ -110,7 +112,8 @@ namespace Core
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Block(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
-                var blockExprP = SepBy('{', expressionRec, '}', Skip(';')).Label("block")
+                var blockExprP = SepBy('{', expressionRec, '}', Skip(';'), canEndWithSep: true).
+                    Label("block")
                     .Map(x => (Token)new BlockToken(new Tokens(x)));
 
                 return SkipWs(blockExprP);
@@ -121,6 +124,7 @@ namespace Core
             {
                 // Variable
                 var variableP = Name()
+                    .Label("variable")
                     .Map(x => (Token)new VariableToken(x));
 
                 return SkipWs(variableP);
@@ -134,6 +138,7 @@ namespace Core
                     .And_(WS)
                     .AndR(Name())
                     .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
+                    .Label("instantiation")
                     .Map(x => (Token)new InstantiationToken(x.Item1, new Tokens(x.Item2)));
 
                 return SkipWs(instantiationP);
@@ -145,15 +150,51 @@ namespace Core
                 // Function call
                 var functionCallP = Variable(expressionRec)
                     .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
+                    .Label("functionCall")
                     .Map(x => (Token)new FunctionCallToken(x.Item1, new Tokens(x.Item2)));
 
                 return SkipWs(functionCallP);
             }
+            
+            static FSharpFunc<CharStream<Unit>, Reply<Token>> Native(
+                FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
+            {
+                // Native keyword
+                var nativeP = StringP("native")
+                    .Label("native")
+                    .Return((Token)new NativeToken());
 
-            FSharpFunc<CharStream<Unit>, Reply<Token>> expressionP = null;
-            var expressionPRec = Rec(() => expressionP);
+                return SkipWs(nativeP);
+            }
+            
+            static FSharpFunc<CharStream<Unit>, Reply<Token>> Match(
+                FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
+            {
+                var typeMatch = Name().AndLTry(WS).AndLTry(CharP(':')).AndLTry(WS).AndTry(Name()).AndLTry(WS)
+                    .AndLTry(StringP("=>")).AndLTry(WS).AndTry(expressionRec)
+                    .Map(x => new ArmToken(x.Item1.Item1, x.Item1.Item2, x.Item2));
 
+                var nullMatch = Skip("null").AndTry_(WS).AndTry_(StringP("=>")).AndTry_(WS).AndRTry(expressionRec)
+                    .Map(x => new ArmToken("null", "Any", x));
+
+                var arm = Skip("case").AndTry_(WS1)
+                    .AndRTry(Choice(typeMatch, nullMatch));
+
+                var arms = SepBy('{', arm, '}', SkipNewline, true);
+                
+                var nativeP = expressionRec.AndLTry(WS1).AndLTry(StringP("match"))
+                    .AndLTry(WS)
+                    .AndTry(arms)
+                    .Label("native")
+                    .Map(x => (Token)new Match(x.Item1, x.Item2.AsValueSemantics()));
+
+                return SkipWs(nativeP);
+            }
+            
             // Binary and unary
+            FSharpFunc<CharStream<Unit>, Reply<Token>> expressionP = null;
+            var expressionRec = Rec(() => expressionP);
+            
             expressionP = new OPPBuilder<Unit, Token, Unit>()
                 .WithOperators(ops => ops
                     .AddPrefix("-", 5, WS, token => new NegateToken(token))
@@ -164,9 +205,12 @@ namespace Core
                     .AddInfix("/", 20, WS, (x, y) => new DivideToken(x, y))
                     .AddInfix("==", 30, WS, (x, y) => new EqualsToken(x, y))
                     .AddInfix("!=", 30, WS, (x, y) => new NotEqualsToken(x, y))
-                    .AddInfix(".", 40, WS, (x, y) => new AccessToken(x, y))
+                    .AddInfix("<=", 30, WS, (x, y) => new LessThanEqualsToken(x, y))
+                    .AddInfix("<", 30, WS, (x, y) => new LessThanToken(x, y))
+                    .AddInfix(".", 40, WS, (x, y) => new AccessToken(x, Guard(y, y is VariableToken or FunctionCallToken)))
                 )
                 .WithTerms(term => Choice(
+                        Native(term),
                         Declaration(term),
                         Instantiation(term),
                         Conditional(term),
@@ -177,6 +221,7 @@ namespace Core
                         FunctionCall(term),
                         Variable(term),
                         Wrap('(', term, ')')
+                        //Match(expressionRec)
                     )
                 )
                 .Build()
@@ -189,25 +234,54 @@ namespace Core
 
         /// <summary>
         /// Function has the following form:
-        ///   def [Variable]() = [Expression]
-        /// </summary>
+        ///   def [Variable](Formals): Type = [Expression]
+        /// </summary>false
         public static FSharpFunc<CharStream<Unit>, Reply<FunctionDeclToken>> Function()
         {
-            var functionDeclP = Skip("def").AndTry_(WS1).AndRTry(Name()).AndLTry(WS).AndTry(Formals(false))
+            var prefix = Choice(StringP("override").AndLTry(WS1).AndLTry(Skip("def")), StringP("def"));
+            
+            var functionDeclP = prefix.AndLTry(WS1).AndTry_(Name()).AndLTry(WS).AndTry(Formals())
+                .AndLTry(WS)
+                .AndLTry(CharP(':'))
+                .AndTry(SkipWs(Name()))
                 .AndLTry(CharP('='))
                 .AndTry(Expression())
                 .Map(x => new FunctionDeclToken(
-                    x.Item1.Item1,
+                    x.Item1.Item1.Item1.Item1 == "override",
+                    x.Item1.Item1.Item1.Item2,
+                    x.Item1.Item1.Item2,
                     x.Item1.Item2,
                     x.Item2));
 
             return SkipWs(functionDeclP);
         }
 
-        public static FSharpFunc<CharStream<Unit>, Reply<Token>> Feature()
+        public static FSharpFunc<CharStream<Unit>, Reply<CommentToken>> Comment()
         {
-            var featureP = Choice(Function().Map(x => (Token)x), Expression())
-                .Map(x => x);
+            var singleLineCommentP = StringP("//").AndR(RestOfLine(true))
+                .Map(x => new CommentToken(x.Trim()));
+            var multipleLineComment = StringP("/*").AndR(ManyTill(AnyChar, StringP("*/")))
+                .Map(x => new CommentToken(new string(x.ToArray()).Trim()));
+
+            return SkipOnlyWs(Choice(singleLineCommentP, multipleLineComment)
+                .Label("comment"));
+        }
+        
+        public static FSharpFunc<CharStream<Unit>, Reply<CommentsToken>> Comments()
+        {
+            var commentsP = Many(Comment(), sep: Skip(WS), canEndWithSep: true)
+                .Map(x => new CommentsToken(x.AsValueSemantics()));
+
+            return SkipOnlyWs(commentsP);
+        }
+
+        public static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<Token>>> Features()
+        {
+            var items = Choice(Function().Map(x => (Token)x), Expression())
+                .Label("feature");
+            var featureP = Many(items, sep: Choice(Skip(';')), canEndWithSep: true)
+                .Label("feature")
+                .Map(x => x.AsValueSemantics());
 
             return SkipWs(featureP);
         }
@@ -216,10 +290,9 @@ namespace Core
         /// Formal are argument to functions to argument to class constructors
         /// </summary>
         /// <returns></returns>
-        public static FSharpFunc<CharStream<Unit>, Reply<Formal>> Formal(bool withVarPrefix)
+        public static FSharpFunc<CharStream<Unit>, Reply<Formal>> Formal()
         {
-            var prefix = withVarPrefix ? Skip("var").And_(WS1).AndR(Name()) : Name();
-            var argumentP = prefix.AndLTry(WS).AndLTry(CharP(':')).AndLTry(WS).AndTry(Name())
+            var argumentP = Name().AndLTry(WS).AndLTry(CharP(':')).AndLTry(WS).AndTry(Name())
                 .Map(x => new Formal(x.Item1, x.Item2));
 
             return SkipWs(argumentP);
@@ -228,9 +301,9 @@ namespace Core
         /// <summary>
         /// Formals are list of formals separated by ','
         /// </summary>
-        public static FSharpFunc<CharStream<Unit>, Reply<Formals>> Formals(bool withVarPrefix)
+        public static FSharpFunc<CharStream<Unit>, Reply<Formals>> Formals()
         {
-            var formalsP = SepBy('(', Formal(withVarPrefix), ')', Skip(','))
+            var formalsP = SepBy('(', Formal(), ')', Skip(','))
                 .Map(x => new Formals(x));
 
             return SkipWs(formalsP);
@@ -242,7 +315,7 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<ClassToken>> Class()
         {
-            var classSignatureP = Name().AndLTry(WS).AndTry(Formals(true));
+            var classSignatureP = Name().AndLTry(WS).AndTry(Formals());
             var classPrefix = StringP("class").AndTry_(WS).AndRTry(classSignatureP);
 
             // class A() extends B() { }
@@ -252,7 +325,7 @@ namespace Core
                 .And(WS1)
                 .And(Name())
                 .AndTry(SepBy('(', Expression(), ')', Skip(',')))
-                .AndTry(SepBy('{', Feature(), '}', Skip(';')))
+                .AndTry(Wrap('{', Features(), '}'))
                 .Map(x => new ClassToken(
                     x.Item1.Item1.Item1.Item1,
                     x.Item1.Item1.Item1.Item2,
@@ -263,7 +336,7 @@ namespace Core
 
             // class A() { }
             var classP2 = classPrefix
-                .AndTry(SepBy('{', Feature(), '}', Skip(';')))
+                .AndTry(Wrap('{', Features(), '}'))
                 .Map(x => new ClassToken(
                     x.Item1.Item1,
                     x.Item1.Item2,
@@ -277,7 +350,7 @@ namespace Core
                 .AndLTry(StringP("extends"))
                 .AndTry(WS1)
                 .AndTry(Skip("native"))
-                .AndTry(SepBy('{', Feature(), '}', Skip(';')))
+                .AndTry(Wrap('{', Features(), '}'))
                 .Map(x => new ClassToken(
                     x.Item1.Item1,
                     x.Item1.Item2,
@@ -289,10 +362,10 @@ namespace Core
             return SkipWs(Choice(classP1, classP2, classP3));
         }
 
-        public static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<ClassToken>>> Classes()
+        public static FSharpFunc<CharStream<Unit>, Reply<Classes>> Classes()
         {
             var classesP = Many(Class(), sep: Skip(WS), canEndWithSep: true)
-                .Map(x => x.AsValueSemantics());
+                .Map(x => new Classes(x.AsValueSemantics()));
 
             return SkipWs(classesP);
         }
@@ -310,9 +383,10 @@ namespace Core
             char start,
             FSharpFunc<CharStream<Unit>, Reply<T>> p,
             char end,
-            FSharpFunc<CharStream<Unit>, Reply<Unit>> delimiterP)
+            FSharpFunc<CharStream<Unit>, Reply<Unit>> delimiterP,
+            bool canEndWithSep = false)
         {
-            var arrItems = Many(SkipWs(p), sep: delimiterP, canEndWithSep: false);
+            var arrItems = Many(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep);
             var arrayP = Wrap(start, arrItems, end)
                 .Map(elems => elems.AsValueSemantics());
             return arrayP;
@@ -322,7 +396,25 @@ namespace Core
             FSharpFunc<CharStream<Unit>, Reply<T>> p
         )
         {
+            return Skip(Comments()).AndTry(p).AndL(Skip(Comments()));
+        }
+        
+        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipOnlyWs<T>(
+            FSharpFunc<CharStream<Unit>, Reply<T>> p
+        )
+        {
             return Skip(WS).AndTry(p).AndL(Skip(WS));
+        }
+
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        private static T Guard<T>(T instance, bool check) where T: Token
+        {
+            if (!check)
+            {
+                throw new Exception($"Unexpected instance: {instance}");
+            }
+
+            return instance;
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Core.Extensions;
 using Core.Interfaces;
 
 namespace System.Runtime.CompilerServices
@@ -19,11 +18,15 @@ namespace Core
     #region Misc
     
     public record CommentToken(string Text) : Token;
+    
+    public record CommentsToken(IValueCollection<CommentToken> Inner) : Token;
 
     #endregion
 
     #region Singular
 
+    public record NativeToken : Token;
+    
     public record AssignToken(string Variable, Token Body) : Token;
 
     public record WhileToken(Token Condition, Token Body) : Token;
@@ -32,7 +35,7 @@ namespace Core
 
     public record VarDeclToken(string Variable, string Type, Token Body) : Token;
 
-    public record FunctionDeclToken(string Name, Formals Formals, Token Body) : Token;
+    public record FunctionDeclToken(bool Override, string Name, Formals Formals, string Type, Token Body) : Token;
     
     public record BlockToken(Tokens Tokens) : Token;
 
@@ -47,6 +50,10 @@ namespace Core
     public record EqualsToken(Token Left, Token Right) : Token;
 
     public record NotEqualsToken(Token Left, Token Right) : Token;
+    
+    public record LessThanToken(Token Left, Token Right) : Token;
+
+    public record LessThanEqualsToken(Token Left, Token Right) : Token;
 
     public record SubtractToken(Token Left, Token Right) : Token;
     
@@ -66,6 +73,8 @@ namespace Core
 
     public record ClassToken(string Name, Formals Formals, string Inherits, Tokens Actuals, Tokens Features);
 
+    public record ArmToken(string Name, string Type, Token Result);
+    
     #endregion
     
     #region SequenceToken
@@ -73,6 +82,10 @@ namespace Core
     public record Formals(IValueCollection<Formal> Inner) : Token;
 
     public record Tokens(IValueCollection<Token> Inner) : Token;
+    
+    public record Classes(IValueCollection<ClassToken> Inner) : Token;
+
+    public record Match(Token Token, IValueCollection<ArmToken> Inner) : Token;
 
     #endregion
 }
