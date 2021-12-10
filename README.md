@@ -1,7 +1,4 @@
-# cool-parser
+# toy-parser
 
-Parser for variation of classroom object oriented language (cool)
+Parser for variation of toy object oriented language
 
-Distinctions:
-- no semicolons
-- class has to extend another class

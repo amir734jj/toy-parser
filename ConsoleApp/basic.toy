@@ -33,12 +33,12 @@ class IO() {
   /** Print the argument (without quotes) to stdout and return itself */
   def out(arg : String) : IO = native;
 
-  /* def is_null(arg : Any) : Boolean = {
-    arg match { 
+  def is_null(arg : Any) : Boolean = {
+    match arg with { 
       case null => true 
       case x:Any => false 
     }
-  }; */
+  };
 
   /** Convert to a string and print */
   def out_any(arg : Any) : IO = {
