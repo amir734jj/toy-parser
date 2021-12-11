@@ -2,7 +2,7 @@
 
 ![Icon](https://img.icons8.com/ios-glyphs/90/000000/rubber-duck.png)
 
-Parser for toy object oriented language 
+Parser for toy object oriented language using FParsec
 
 
 
