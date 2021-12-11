@@ -31,55 +31,56 @@ class Foo() extends IO() {
 // This is a single line comment
 /* this is a multiline comment */
 
-<Name>       = [^:" {}=()\n;,*!.<>]+
-             ;
+<Name>         = [^:" {}=()\n;,*!.<>]+
+               ;
              
-<Actuals>    = '(' (<Expr> ,)+ <Expr> ')' | '(' <Expr> ')' | '(' ')'
-             ;
+<Actuals>      = '(' (<Expr> ,)+ <Expr> ')' | '(' <Expr> ')' | '(' ')'
+               ;
              
-Arm          = case null '=>' <Expr> | case <Name> ':' <Name> '=>' <Expr>
-             ;
+<Arm>          = case null '=>' <Expr> | case <Name> ':' <Name> '=>' <Expr>
+               ;
              
-Arms         = '{' (<Arm> ,)+ <Arm> '}' | '{' <Arm> '}' | '{' '}'
-             ;
+<Arms>         = '{' (<Arm> ,)+ <Arm> '}' | '{' <Arm> '}' | '{' '}'
+               ;
              
-<Expr>       = if '(' <Expr> ')' else <Expr>
-             | while '(' <Expr> ')' <Expr>
-             | match <Expr> with Arms
-             | <Name> <Actuals>
-             | var <Name> '=' <Expr>
-             | <Name> '=' <Expr>
-             | '{' (<Expr> ';')+ <Expr> '}' | '{' <Expr> '}' | '{' '}'
-             | [\d]+
-             | <Name>
-             | null
-             | true | false
-             | '(' <Expr> ')'
-             | native
-             | <Expr> '.' <Expr>
-             | <Expr> '+' <Expr> | <Expr> '-' <Expr> | <Expr> '*' <Expr> | <Expr> '/' <Expr>
-             | <Expr> '<' <Expr> | <Expr> '<=' <Expr>
-             | '-' <Expr>
-             | '!' <Expr>
-             | <Expr> '==' <Expr> | <Expr> '!=' <Expr>
-             ;
+<Expr>         = if '(' <Expr> ')' else <Expr>
+               | while '(' <Expr> ')' <Expr>
+               | match <Expr> with Arms
+               | <Name> <Actuals>
+               | var <Name> '=' <Expr>
+               | <Name> '=' <Expr>
+               | '{' (<Expr> ';')+ <Expr> '}' | '{' <Expr> '}' | '{' '}'
+               | [\d]+
+               | <Name>
+               | null
+               | true | false
+               | '(' <Expr> ')'
+               | native
+               | <Expr> '.' <Expr>
+               | <Expr> '+' <Expr> | <Expr> '-' <Expr> | <Expr> '*' <Expr> | <Expr> '/' <Expr>
+               | <Expr> '<' <Expr> | <Expr> '<=' <Expr>
+               | '-' <Expr>
+               | '!' <Expr>
+               | <Expr> '==' <Expr> | <Expr> '!=' <Expr>
+               ;
 
-Formal       = <Name> ':' <Name> 
-             ;
+<Formal>       = <Name> ':' <Name> 
+               ;
              
-Formals      = '(' (<Formal> ';')+ <Formal> ')' | '(' (<Formal> ')' | '(' ')'
-             ;
+<Formals>      = '(' (<Formal> ';')+ <Formal> ')' | '(' (<Formal> ')' | '(' ')'
+               ;
 
-FunctionDecl = def <Name> <Formals> : <Name> = <Expr>
-             ;
+<FunctionDecl> = def <Name> <Formals> : <Name> = <Expr>
+               ;
 
-Feature      = <Expr> | <FunctionDecl>
-             ;
+<Feature>      = <Expr> | <FunctionDecl>
+               ;
              
-Features     = '{' (<Feature> ;)+ <Feature> '}' | '{' <Feature> '}' | '{' '}'
-             ;
+<Features>     = '{' (<Feature> ;)+ <Feature> '}' | '{' <Feature> '}' | '{' '}'
+               ;
              
-ClassDecl    = class <Name> <Formals> Features
-             | class <Name> <Formals> extends <Name> <Actuals> Features
-             | class <Name> <Formals> extends native Features
+<ClassDecl>    = class <Name> <Formals> Features
+               | class <Name> <Formals> extends <Name> <Actuals> Features
+               | class <Name> <Formals> extends native Features
+               ;
 ```
