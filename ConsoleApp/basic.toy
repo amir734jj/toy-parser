@@ -35,7 +35,7 @@ class IO() {
 
   def is_null(arg : Any) : Boolean = {
     match arg with { 
-      case null => true 
+      case null => true,
       case x:Any => false 
     }
   };

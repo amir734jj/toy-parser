@@ -8,7 +8,7 @@ namespace Core.Tests
     public class MatchParserTest
     {
         [Theory]
-        [InlineData("match null with { null => null }")]
+        [InlineData("match foo with { case null => null }")]
         public void Test_Atomic(string text)
         {
             // Act

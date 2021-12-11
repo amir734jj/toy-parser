@@ -20,17 +20,20 @@ namespace Core
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
             var invalidChars = new[]
-                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<' };
+                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<', '>' };
             var reservedKeyword = new[]
             {
                 "match", "while", "with", "class", "extends", "if", "else", "case", "def", "null", "var", "new",
-                "native"
+                "native", "overrides"
             };
 
-            FSharpFunc<CharStream<Unit>, Reply<string>> nameP = Many1CharsU<string>(x => !invalidChars.Contains(x))
+            /*FSharpFunc<CharStream<Unit>, Reply<string>> nameP = Many1CharsU<string>(x => !invalidChars.Contains(x))
                 .AndL(UserStateSatisfies<string>(x => reservedKeyword.Contains(x)))
                 .AndL(UpdateUserState<Unit>(x => Unit))
-                .Label("name");
+                .Label("name");*/
+
+            var nameP = Many1(NoneOf(invalidChars))
+                .Map(x => new string(x.ToArray()));
             return nameP;
         }
 
@@ -181,14 +184,14 @@ namespace Core
                 var typeMatch = Name().AndLTry(WS).AndLTry(Skip(':')).AndLTry(WS).AndTry(Name()).AndLTry(WS)
                     .AndLTry(Skip("=>")).AndLTry(WS).AndTry(expressionRec)
                     .Map(x => new ArmToken(x.Item1.Item1, x.Item1.Item2, x.Item2));
-
+                
                 var nullMatch = Skip("null").AndTry_(WS).AndTry_(Skip("=>")).AndTry_(WS).AndRTry(expressionRec)
                     .Map(x => new ArmToken("null", "Any", x));
-
+                
                 var arm = Skip("case").AndTry_(WS1)
                     .AndRTry(Choice(typeMatch, nullMatch));
-
-                var arms = SepBy1('{', arm, '}', SkipNewline, canEndWithSep: true);
+                
+                var arms = SepBy1('{', arm, '}', Skip(','), canEndWithSep: true);
 
                 var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec).AndLTry(WS1).AndLTry(Skip("with"))
                     .AndLTry(WS)
@@ -225,7 +228,7 @@ namespace Core
                         Block(term),
                         Atomic(term),
                         FunctionCall(term),
-                        // Variable(term),
+                        Variable(term),
                         Wrap('(', term, ')')
                     )
                 )
