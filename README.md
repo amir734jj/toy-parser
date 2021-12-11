@@ -10,8 +10,10 @@ Parser for toy object oriented language
 
 ```scala
 class Foo() extends IO() {
-  def fibonacci(n: Int): Int =
-    if (n <= 1) n else fibonacci(n - 1) + fibonacci(n - 2);
+  def fibonacci(n: Int): Int = if (n <= 1)
+    n
+  else
+    fibonacci(n - 1) + fibonacci(n - 2);
 
   def assertEquals(expected: Any, actual: Any, msg: String): Unit = if (expected != actual)
     out(
