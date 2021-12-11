@@ -1,6 +1,10 @@
 # toy-parser
 
-Parser for variation of toy object oriented language
+![Icon](https://img.icons8.com/ios-glyphs/90/000000/rubber-duck.png)
+
+Parser for toy object oriented language 
+
+
 
 ## Example
 
