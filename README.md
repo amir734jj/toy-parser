@@ -27,6 +27,8 @@ class Foo() extends IO() {
 ```
 ## Syntax
 
+If you are familiar with Scala, then this should be very familiar. This is the CFG in a nutshell:
+
 ```regex
 // This is a single line comment
 /* this is a multiline comment */
