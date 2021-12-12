@@ -39,6 +39,10 @@ If you are familiar with Scala, then this should be very familiar. This is the C
 // This is a single line comment
 /* this is a multiline comment */
 
+<Comment>      = '//' + ([^/][^/])* '//'
+               | '/*' + ([^*][^/])* '*/'
+               ;
+               
 <Name>         = [^:" {}=()\n;,*!.<>]+
                ;
              
