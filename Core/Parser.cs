@@ -71,8 +71,8 @@ namespace Core
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // Declaration
-                var declarationP = Skip("var").AndTry_(WS1).AndRTry(Name()).AndLTry(WS).AndLTry(CharP(':'))
-                    .AndLTry(WS).AndTry(Name()).AndLTry(WS).AndLTry(CharP('=')).AndLTry(WS)
+                var declarationP = Skip("var").AndTry_(WS1).AndRTry(Name()).AndLTry(WS).AndLTry(Skip(':'))
+                    .AndLTry(WS).AndTry(Name()).AndLTry(WS).AndLTry(Skip('=')).AndLTry(WS)
                     .AndTry(expressionRec)
                     .Label("decl")
                     .Map(x => (Token)new VarDeclToken(x.Item1.Item1, x.Item1.Item2, x.Item2));
@@ -84,7 +84,7 @@ namespace Core
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // Assignment
-                var assignmentP = Name().AndLTry(WS).AndLTry(CharP('=')).AndLTry(WS).AndTry(expressionRec)
+                var assignmentP = Name().AndLTry(WS).AndLTry(Skip('=')).AndLTry(WS).AndTry(expressionRec)
                     .Label("assign")
                     .Map(x => (Token)new AssignToken(x.Item1, x.Item2));
 
