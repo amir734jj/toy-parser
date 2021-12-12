@@ -9,7 +9,11 @@ Parser for toy object oriented language using FParsec
 ## Example
 
 ```scala
+/**
+ * This is an example of multiline comment
+ */
 class Foo() extends IO() {
+  // This is an example of single line comment
   def fibonacci(n: Int): Int = if (n <= 1)
     n
   else
@@ -36,9 +40,6 @@ class Foo() extends IO() {
 If you are familiar with Scala, then this should be very familiar. This is the CFG in a nutshell:
 
 ```regex
-// This is a single line comment
-/* this is a multiline comment */
-
 <Comment>      = '//' + ([^/][^/])* '//'
                | '/*' + ([^*][^/])* '*/'
                ;
