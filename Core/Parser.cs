@@ -5,7 +5,6 @@ using Core.Extensions;
 using Core.Interfaces;
 using FParsec;
 using FParsec.CSharp;
-using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using static FParsec.CSharp.PrimitivesCS; // combinator functions
 using static FParsec.CSharp.CharParsersCS; // pre-defined parsers
@@ -20,7 +19,7 @@ namespace Core
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
             var invalidChars = new[]
-                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<', '>' };
+                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<', '>', 'm' };
             var reservedKeyword = new[]
             {
                 "match", "while", "with", "class", "extends", "if", "else", "case", "def", "null", "var", "new",
