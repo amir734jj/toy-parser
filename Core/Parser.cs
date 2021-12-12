@@ -19,7 +19,7 @@ namespace Core
         public static FSharpFunc<CharStream<Unit>, Reply<string>> Name()
         {
             var invalidChars = new[]
-                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<', '>', 'm' };
+                { ':', '"', ' ', '{', '}', '=', '(', ')', '\n', ';', ',', '*', '!', '.', '<', '>' };
             var reservedKeyword = new[]
             {
                 "match", "while", "with", "class", "extends", "if", "else", "case", "def", "null", "var", "new",
