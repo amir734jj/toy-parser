@@ -198,7 +198,7 @@ namespace Core
                     .AndRTry(Choice(typeMatch, nullMatch))
                     .Label("arm");
                 
-                var arms = SepBy1('{', arm, '}', Skip(','), canEndWithSep: true)
+                var arms = SepBy('{', arm, '}', Skip(','), canEndWithSep: true, canBeEmpty: false)
                     .Label("arms");
 
                 var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec).AndLTry(WS1).AndLTry(Skip("with"))
@@ -403,27 +403,17 @@ namespace Core
             return wrapP;
         }
 
-        private static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<T>>> SepBy1<T>(
-            char start,
-            FSharpFunc<CharStream<Unit>, Reply<T>> p,
-            char end,
-            FSharpFunc<CharStream<Unit>, Reply<Unit>> delimiterP,
-            bool canEndWithSep = false)
-        {
-            var arrItems = Many1(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep);
-            var arrayP = Wrap(start, arrItems, end)
-                .Map(elems => elems.AsValueSemantics());
-            return arrayP;
-        }
-
         private static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<T>>> SepBy<T>(
             char start,
             FSharpFunc<CharStream<Unit>, Reply<T>> p,
             char end,
             FSharpFunc<CharStream<Unit>, Reply<Unit>> delimiterP,
-            bool canEndWithSep = false)
+            bool canEndWithSep = false,
+            bool canBeEmpty = true)
         {
-            var arrItems = Many(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep);
+            var arrItems = canBeEmpty
+                ? Many(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep)
+                : Many1(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep);
             var arrayP = Wrap(start, arrItems, end)
                 .Map(elems => elems.AsValueSemantics());
             return arrayP;
