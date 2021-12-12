@@ -67,7 +67,7 @@ namespace Core
 
                 var atomicP = Choice(nullP, numberP, quotedStringP, boolP).Label("atomic");
 
-                return SkipWs(atomicP);
+                return SkipComments(atomicP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Declaration(
@@ -80,7 +80,7 @@ namespace Core
                     .Label("decl")
                     .Map(x => (Token)new VarDeclToken(x.Item1.Item1, x.Item1.Item2, x.Item2));
 
-                return SkipWs(declarationP);
+                return SkipComments(declarationP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Assignment(
@@ -91,7 +91,7 @@ namespace Core
                     .Label("assign")
                     .Map(x => (Token)new AssignToken(x.Item1, x.Item2));
 
-                return SkipWs(assignmentP);
+                return SkipComments(assignmentP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Conditional(
@@ -106,7 +106,7 @@ namespace Core
                     .Map(x =>
                         (Token)new CondToken(x.Item1.Item1, x.Item1.Item2, x.Item2));
 
-                return SkipWs(conditionalP);
+                return SkipComments(conditionalP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> While(
@@ -121,17 +121,18 @@ namespace Core
                     .Map(x =>
                         (Token)new WhileToken(x.Item1, x.Item2));
 
-                return SkipWs(conditionalP);
+                return SkipComments(conditionalP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Block(
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
+                // Block
                 var blockExprP = SepBy('{', expressionRec, '}', Skip(';'), canEndWithSep: true)
                     .Label("block")
                     .Map(x => (Token)new BlockToken(new Tokens(x)));
 
-                return SkipWs(blockExprP);
+                return SkipComments(blockExprP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Variable(
@@ -142,7 +143,7 @@ namespace Core
                     .Label("variable")
                     .Map(x => (Token)new VariableToken(x));
 
-                return SkipWs(variableP);
+                return SkipComments(variableP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Instantiation(
@@ -156,7 +157,7 @@ namespace Core
                     .Label("instantiation")
                     .Map(x => (Token)new InstantiationToken(x.Item1, new Tokens(x.Item2)));
 
-                return SkipWs(instantiationP);
+                return SkipComments(instantiationP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> FunctionCall(
@@ -168,7 +169,7 @@ namespace Core
                     .Label("functionCall")
                     .Map(x => (Token)new FunctionCallToken(x.Item1, new Tokens(x.Item2)));
 
-                return SkipWs(functionCallP);
+                return SkipComments(functionCallP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Native(
@@ -179,7 +180,7 @@ namespace Core
                     .Label("native")
                     .Return((Token)new NativeToken());
 
-                return SkipWs(nativeP);
+                return SkipComments(nativeP);
             }
 
             static FSharpFunc<CharStream<Unit>, Reply<Token>> Match(
@@ -207,7 +208,7 @@ namespace Core
                     .Label("match")
                     .Map(x => (Token)new Match(x.Item1, x.Item2.AsValueSemantics()));
 
-                return SkipWs(matchP);
+                return SkipComments(matchP);
             }
 
             var expressionP = new OPPBuilder<Unit, Token, Unit>()
@@ -245,7 +246,7 @@ namespace Core
                 .Label("operator");
 
 
-            return SkipWs(expressionP);
+            return SkipComments(expressionP);
         }
 
         /// <summary>
@@ -259,7 +260,7 @@ namespace Core
             var functionDeclP = prefix.AndLTry(WS1).AndTry_(Name()).AndLTry(WS).AndTry(Formals())
                 .AndLTry(WS)
                 .AndLTry(Skip(':'))
-                .AndTry(SkipWs(Name()))
+                .AndTry(SkipComments(Name()))
                 .AndLTry(Skip('='))
                 .AndTry(Expression())
                 .Label("functionDecl")
@@ -270,7 +271,7 @@ namespace Core
                     x.Item1.Item2,
                     x.Item2));
 
-            return SkipWs(functionDeclP);
+            return SkipComments(functionDeclP);
         }
 
         public static FSharpFunc<CharStream<Unit>, Reply<CommentToken>> Comment()
@@ -280,7 +281,7 @@ namespace Core
             var multipleLineComment = Skip("/*").AndRTry(ManyTill(AnyChar, Skip("*/")))
                 .Map(x => new CommentToken(new string(x.ToArray()).Trim()));
 
-            return SkipOnlyWs(Choice(singleLineCommentP, multipleLineComment)
+            return SkipWs(Choice(singleLineCommentP, multipleLineComment)
                 .Label("comment"));
         }
 
@@ -290,7 +291,7 @@ namespace Core
                 .Label("comments")
                 .Map(x => new CommentsToken(x.AsValueSemantics()));
 
-            return SkipOnlyWs(commentsP);
+            return SkipWs(commentsP);
         }
 
         public static FSharpFunc<CharStream<Unit>, Reply<IValueCollection<Token>>> Features()
@@ -301,7 +302,7 @@ namespace Core
                 .Label("features")
                 .Map(x => x.AsValueSemantics());
 
-            return SkipWs(featureP);
+            return SkipComments(featureP);
         }
 
         /// <summary>
@@ -314,7 +315,7 @@ namespace Core
                 .Label("formal")
                 .Map(x => new Formal(x.Item1, x.Item2));
 
-            return SkipWs(argumentP);
+            return SkipComments(argumentP);
         }
 
         /// <summary>
@@ -326,7 +327,7 @@ namespace Core
                 .Label("formals")
                 .Map(x => new Formals(x));
 
-            return SkipWs(formalsP);
+            return SkipComments(formalsP);
         }
 
         /// <summary>
@@ -382,7 +383,7 @@ namespace Core
                     new Tokens(x.Item2)
                 ));
 
-            return SkipWs(Choice(classP1, classP2, classP3));
+            return SkipComments(Choice(classP1, classP2, classP3));
         }
 
         public static FSharpFunc<CharStream<Unit>, Reply<Classes>> Classes()
@@ -391,7 +392,7 @@ namespace Core
                 .Label("classes")
                 .Map(x => new Classes(x.AsValueSemantics()));
 
-            return SkipWs(classesP);
+            return SkipComments(classesP);
         }
 
         private static FSharpFunc<CharStream<Unit>, Reply<T>> Wrap<T>(
@@ -399,7 +400,7 @@ namespace Core
             FSharpFunc<CharStream<Unit>, Reply<T>> p,
             char end)
         {
-            var wrapP = Between(SkipWs(CharP(start)), SkipWs(p), SkipWs(CharP(end)));
+            var wrapP = Between(SkipComments(CharP(start)), SkipComments(p), SkipComments(CharP(end)));
             return wrapP;
         }
 
@@ -412,21 +413,21 @@ namespace Core
             bool canBeEmpty = true)
         {
             var arrItems = canBeEmpty
-                ? Many(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep)
-                : Many1(SkipWs(p), sep: delimiterP, canEndWithSep: canEndWithSep);
+                ? Many(SkipComments(p), sep: delimiterP, canEndWithSep: canEndWithSep)
+                : Many1(SkipComments(p), sep: delimiterP, canEndWithSep: canEndWithSep);
             var arrayP = Wrap(start, arrItems, end)
                 .Map(elems => elems.AsValueSemantics());
             return arrayP;
         }
 
-        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipWs<T>(
+        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipComments<T>(
             FSharpFunc<CharStream<Unit>, Reply<T>> p
         )
         {
             return Skip(Comments()).AndRTry(p).AndLTry(Skip(Comments()));
         }
 
-        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipOnlyWs<T>(
+        private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipWs<T>(
             FSharpFunc<CharStream<Unit>, Reply<T>> p
         )
         {
