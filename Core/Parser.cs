@@ -110,7 +110,7 @@ namespace Core
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // While
-                var conditionalP = Skip("while").And_(WS)
+                var conditionalP = Skip("while").AndTry_(WS)
                     .AndRTry(Wrap('(', expressionRec, ')'))
                     .AndLTry(WS)
                     .AndTry(expressionRec)
@@ -146,8 +146,8 @@ namespace Core
             {
                 // Instantiation
                 var instantiationP = Skip("new")
-                    .And_(WS)
-                    .AndR(Name())
+                    .AndTry_(WS)
+                    .AndRTry(Name())
                     .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
                     .Label("instantiation")
                     .Map(x => (Token)new InstantiationToken(x.Item1, new Tokens(x.Item2)));
@@ -266,9 +266,9 @@ namespace Core
 
         public static FSharpFunc<CharStream<Unit>, Reply<CommentToken>> Comment()
         {
-            var singleLineCommentP = Skip("//").AndR(RestOfLine(true))
+            var singleLineCommentP = Skip("//").AndRTry(RestOfLine(true))
                 .Map(x => new CommentToken(x.Trim()));
-            var multipleLineComment = Skip("/*").AndR(ManyTill(AnyChar, Skip("*/")))
+            var multipleLineComment = Skip("/*").AndRTry(ManyTill(AnyChar, Skip("*/")))
                 .Map(x => new CommentToken(new string(x.ToArray()).Trim()));
 
             return SkipOnlyWs(Choice(singleLineCommentP, multipleLineComment)
@@ -330,8 +330,8 @@ namespace Core
             var classP1 = classPrefix
                 .AndLTry(WS)
                 .AndLTry(Skip("extends"))
-                .And(WS1)
-                .And(Name())
+                .AndLTry(WS1)
+                .AndTry(Name())
                 .AndTry(SepBy('(', Expression(), ')', Skip(',')))
                 .AndTry(Wrap('{', Features(), '}'))
                 .Map(x => new ClassToken(
@@ -417,14 +417,14 @@ namespace Core
             FSharpFunc<CharStream<Unit>, Reply<T>> p
         )
         {
-            return Skip(Comments()).AndTry(p).AndL(Skip(Comments()));
+            return Skip(Comments()).AndRTry(p).AndLTry(Skip(Comments()));
         }
 
         private static FSharpFunc<CharStream<Unit>, Reply<T>> SkipOnlyWs<T>(
             FSharpFunc<CharStream<Unit>, Reply<T>> p
         )
         {
-            return Skip(WS).AndTry(p).AndL(Skip(WS));
+            return Skip(WS).AndRTry(p).AndLTry(Skip(WS));
         }
 
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
