@@ -58,7 +58,7 @@ If you are familiar with Scala, then this should be very familiar. This is the C
              
 <Expr>         = if '(' <Expr> ')' else <Expr>
                | while '(' <Expr> ')' <Expr>
-               | match <Expr> with Arms
+               | match <Expr> with <Arms>
                | <Name> <Actuals>
                | var <Name> '=' <Expr>
                | <Name> '=' <Expr>
