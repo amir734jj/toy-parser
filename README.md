@@ -97,3 +97,6 @@ If you are familiar with Scala, then this should be very familiar. This is the C
                | class <Name> <Formals> extends native Features
                ;
 ```
+
+### Credit
+- Special thanks to [@bert2](https://github.com/bert2) for helping and prioviding hints. Thank you.
