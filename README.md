@@ -25,9 +25,9 @@ class Foo() extends IO() {
         .concat(ms)
         .concat("]")
         .concat("expected: ")
-        .concact(expected.toString())
-        .concact(" but received: ")
-        .concact(actual.toString())
+        .concat(expected.toString())
+        .concat(" but received: ")
+        .concat(actual.toString())
     )
   else
     out("passed!");
