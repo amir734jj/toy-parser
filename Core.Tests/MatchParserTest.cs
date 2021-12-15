@@ -9,6 +9,9 @@ namespace Core.Tests
     {
         [Theory]
         [InlineData("match foo with { case null => null }")]
+        [InlineData(" match foo with { case null => null }")]
+        [InlineData("match foo with { case null => null } ")]
+        [InlineData(" match foo with { case null => null } ")]
         public void Test_Atomic(string text)
         {
             // Act
@@ -18,7 +21,7 @@ namespace Core.Tests
             Assert.True(reply.IsOk());
             Assert.Equal(new Match(new VariableToken("foo"), new List<ArmToken>
             {
-                new ArmToken("null", "Any", new AtomicToken("null"))
+                new ArmToken("null", "Any", new AtomicToken(null))
             }.AsValueSemantics()), reply.Result);
         }
     }

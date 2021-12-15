@@ -193,7 +193,7 @@ namespace Core
                 
                 var arms = SepBy1('{', arm, '}', Skip(','), canEndWithSep: true);
 
-                var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec).AndLTry(WS1).AndLTry(Skip("with"))
+                var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec).AndLTry(PreviousCharSatisfies(char.IsWhiteSpace)).AndL(Skip("with"))
                     .AndLTry(WS)
                     .AndTry(arms)
                     .Label("match")
