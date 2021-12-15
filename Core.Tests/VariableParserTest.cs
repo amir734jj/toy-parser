@@ -19,5 +19,27 @@ namespace Core.Tests
             Assert.True(reply.IsOk());
             Assert.Equal(new VariableToken("foo"), reply.Result);
         }
+        
+        [Theory]
+        [InlineData("match")]
+        [InlineData("while")]
+        [InlineData("with")]
+        [InlineData("class")]
+        [InlineData("extends")]
+        [InlineData("if")]
+        [InlineData("else")]
+        [InlineData("case")]
+        [InlineData("def")]
+        [InlineData("var")]
+        [InlineData("new")]
+        [InlineData("overrides")]
+        public void Test_Reserved(string text)
+        {
+            // Act
+            var reply = Parser.Expression().ParseString(text);
+
+            // Assert
+            Assert.False(reply.IsOk());
+        }
     }
 }
