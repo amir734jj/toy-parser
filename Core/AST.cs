@@ -38,7 +38,7 @@ namespace Core
     
     public record BlockToken(Tokens Tokens) : Token;
 
-    public record FunctionCallToken(Token Receiver, Token Actuals) : Token;
+    public record FunctionCallToken(Token Receiver, Tokens Actuals) : Token;
 
     public record NegateToken(Token Token) : Token;
 

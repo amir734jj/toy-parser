@@ -12,7 +12,7 @@ using static FParsec.CSharp.CharParsersCS; // pre-defined parsers
 namespace Core
 {
     using StringParser = FSharpFunc<CharStream<Unit>, Reply<string>>;
-    
+
     public static class Parser
     {
         /// <summary>
@@ -31,7 +31,7 @@ namespace Core
             var identifier = Many1Chars(NoneOf(invalidChars))
                 .AndTry(id => reservedKeyword.Contains(id) ? Fail<string>("reserved") : Return(id))
                 .Label("identifier");
-            
+
             return identifier;
         }
 
@@ -128,7 +128,7 @@ namespace Core
                 FSharpFunc<CharStream<Unit>, Reply<Token>> expressionRec)
             {
                 // Block
-                var blockExprP = SepBy('{', expressionRec, '}', Skip(';'), canEndWithSep: true)
+                var blockExprP = SepBy('{', expressionRec, '}', Skip(';'), canEndWithSep: true, canBeEmpty: true)
                     .Label("block")
                     .Map(x => (Token)new BlockToken(new Tokens(x)));
 
@@ -153,7 +153,7 @@ namespace Core
                 var instantiationP = Skip("new")
                     .AndTry_(WS)
                     .AndRTry(Name())
-                    .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
+                    .AndTry(SepBy('(', expressionRec, ')', Skip(','), canBeEmpty: true, canEndWithSep: false))
                     .Label("instantiation")
                     .Map(x => (Token)new InstantiationToken(x.Item1, new Tokens(x.Item2)));
 
@@ -165,7 +165,7 @@ namespace Core
             {
                 // Function call
                 var functionCallP = Variable(expressionRec)
-                    .AndTry(SepBy('(', expressionRec, ')', Skip(',')))
+                    .AndTry(SepBy('(', expressionRec, ')', Skip(','), canBeEmpty: true, canEndWithSep: false))
                     .Label("functionCall")
                     .Map(x => (Token)new FunctionCallToken(x.Item1, new Tokens(x.Item2)));
 
@@ -190,7 +190,7 @@ namespace Core
                     .AndLTry(Skip("=>")).AndLTry(WS).AndTry(expressionRec)
                     .Map(x => new ArmToken(x.Item1.Item1, x.Item1.Item2, x.Item2))
                     .Label("typeBranch");
-                
+
                 var nullMatch = Skip("null").AndTry_(WS).AndTry_(Skip("=>")).AndTry_(WS).AndRTry(expressionRec)
                     .Map(x => new ArmToken("null", "Any", x))
                     .Label("nullBranch");
@@ -198,11 +198,12 @@ namespace Core
                 var arm = Skip("case").AndTry_(WS1)
                     .AndRTry(Choice(typeMatch, nullMatch))
                     .Label("arm");
-                
+
                 var arms = SepBy('{', arm, '}', Skip(','), canEndWithSep: true, canBeEmpty: false)
                     .Label("arms");
 
-                var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec).AndLTry(PreviousCharSatisfies(char.IsWhiteSpace)).AndL(Skip("with"))
+                var matchP = Skip("match").AndTry_(WS1).AndRTry(expressionRec)
+                    .AndLTry(PreviousCharSatisfies(char.IsWhiteSpace)).AndL(Skip("with"))
                     .AndLTry(WS)
                     .AndTry(arms)
                     .Label("match")
@@ -323,7 +324,7 @@ namespace Core
         /// </summary>
         public static FSharpFunc<CharStream<Unit>, Reply<Formals>> Formals()
         {
-            var formalsP = SepBy('(', Formal(), ')', Skip(','))
+            var formalsP = SepBy('(', Formal(), ')', Skip(','), canBeEmpty: true, canEndWithSep: false)
                 .Label("formals")
                 .Map(x => new Formals(x));
 
@@ -345,7 +346,7 @@ namespace Core
                 .AndLTry(Skip("extends"))
                 .AndLTry(WS1)
                 .AndTry(Name())
-                .AndTry(SepBy('(', Expression(), ')', Skip(',')))
+                .AndTry(SepBy('(', Expression(), ')', Skip(','), canBeEmpty: true, canEndWithSep: false))
                 .AndTry(Wrap('{', Features(), '}'))
                 .Label("class")
                 .Map(x => new ClassToken(
@@ -409,8 +410,8 @@ namespace Core
             FSharpFunc<CharStream<Unit>, Reply<T>> p,
             char end,
             FSharpFunc<CharStream<Unit>, Reply<Unit>> delimiterP,
-            bool canEndWithSep = false,
-            bool canBeEmpty = true)
+            bool canEndWithSep,
+            bool canBeEmpty)
         {
             var arrItems = canBeEmpty
                 ? Many(SkipComments(p), sep: delimiterP, canEndWithSep: canEndWithSep)
